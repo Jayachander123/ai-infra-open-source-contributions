@@ -24,14 +24,13 @@ My contributions are connected by a consistent technical theme:
 > Making GenAI and AI infrastructure systems safer, more cost-aware, observable, and production-ready.
 
 ## Projects contributed to
+The project metrics below are included only to show the scale and visibility of the open-source ecosystems where my contributions were merged.
 
 | Project | Public signal | Why it matters |
 |---|---:|---|
 | **LlamaIndex** | 49.3k GitHub stars, 7.4k forks, 10.5M+ PyPIStats downloads last month for `llama-index` | Leading framework for building LLM-powered agents, RAG, document agents, and data workflows. |
 | **SkyPilot** | 10k GitHub stars, 1.1k forks, 375k+ PyPIStats downloads last month | AI infrastructure framework for running, managing, and scaling workloads across Kubernetes, Slurm, 20+ clouds, and on-prem environments. |
 | **LiteLLM** | 46.3k GitHub stars, 7.9k forks, 375M+ PyPIStats downloads last month | Widely used LLM gateway/proxy ecosystem for cost tracking, budgets, observability, model access, guardrails, and rate limits. |
-
-> Note: PyPIStats download counts are reported by PyPIStats and may include CI, mirrors, and automated downloads. They are included as public adoption signals, not as unique-user counts.
 
 ---
 
@@ -164,7 +163,8 @@ Across these projects, my work focuses on practical problems that AI teams face 
 - provider integration reliability,
 - observability for AI infrastructure.
 
-These contributions are small enough to be reviewable and concrete, but they address real operational needs in modern GenAI and AI infrastructure systems.
+These contributions are concrete, reviewable, and production-oriented, addressing real operational needs in modern GenAI and AI infrastructure systems.
+
 
 ## Evidence Links
 
