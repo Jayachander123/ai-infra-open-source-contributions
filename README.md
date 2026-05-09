@@ -30,7 +30,9 @@ The project metrics below are included only to show the scale and visibility of 
 |---|---:|---|
 | **LlamaIndex** | 49.3k GitHub stars, 7.4k forks, 10.5M+ PyPIStats downloads last month for `llama-index` | Leading framework for building LLM-powered agents, RAG, document agents, and data workflows. |
 | **SkyPilot** | 10k GitHub stars, 1.1k forks, 375k+ PyPIStats downloads last month | AI infrastructure framework for running, managing, and scaling workloads across Kubernetes, Slurm, 20+ clouds, and on-prem environments. |
-| **LiteLLM** | 46.3k GitHub stars, 7.9k forks, 375M+ PyPIStats downloads last month | Widely used LLM gateway/proxy ecosystem for cost tracking, budgets, observability, model access, guardrails, and rate limits. |
+| **LiteLLM** | 46.3k GitHub stars, 7.9k forks, 1.8M+ PyPIStats downloads last month | Widely used LLM gateway/proxy ecosystem for cost tracking, budgets, observability, model access, guardrails, and rate limits. |
+
+> GitHub stars, forks, and PyPIStats downloads are included as public adoption/context signals for the open-source ecosystems where my contributions were merged.
 
 ---
 
