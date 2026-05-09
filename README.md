@@ -40,7 +40,7 @@ My contributions are connected by a consistent technical theme:
 ## 1. LlamaIndex — TokenBudgetHandler for cost governance
 
 **Pull request:** https://github.com/run-llama/llama_index/pull/20546  
-**Status:** Merged on January 28, 2026  
+**Status:** Merged on January 29, 2026  
 **Release evidence:** Included in LlamaIndex v0.14.14 release notes as `feat(callbacks): add TokenBudgetHandler for cost governance (#20546)`.
 
 ### Problem
