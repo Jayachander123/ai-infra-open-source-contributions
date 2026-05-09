@@ -132,6 +132,26 @@ This improved pricing-source traceability for model metadata used in LLM cost tr
 As organizations use many LLM providers through gateways, reliable pricing metadata becomes important for budgeting, chargeback, and operational governance.
 
 ---
+# External Recognition and Published Practitioner Testimonial
+
+In addition to merged open-source contributions, my AI infrastructure perspective has been publicly featured by SkyPilot on its official case-studies page.
+
+SkyPilot lists my practitioner testimonial under “Trusted by top AI teams,” identifying me as:
+
+**Jayachander Kandakatla, Senior MLOps Engineer, Ford Credit**
+
+The testimonial emphasizes the importance of governance and cost visibility in running large-scale AI workloads responsibly.
+
+**Evidence:** [SkyPilot published testimonial PDF](assets/09-skypilot-published-testimonial.pdf)  
+**Official page:** https://blog.skypilot.co/case-studies/
+
+## Why this matters
+
+This public testimonial reinforces the same technical theme reflected in my merged SkyPilot contribution: making AI infrastructure more observable, cost-aware, and operationally governable.
+
+My SkyPilot PR added a real-time cluster burn-rate metric, while the published testimonial highlights the practical importance of governance and cost visibility for responsible AI infrastructure operation.
+
+---
 
 # Overall Contribution Theme
 
@@ -170,6 +190,22 @@ These contributions are small enough to be reviewable and concrete, but they add
 - AI Gateway page: https://www.litellm.ai/ai-gateway
 - PR #20181 — Official pricing/source links: https://github.com/BerriAI/litellm/pull/20181
 
+
+
 ## Closing Statement
 
 I am honored to be considered for the Rising Star Contributor category. My goal is to continue contributing to open-source AI infrastructure in ways that help developers and platform teams build production AI systems that are more reliable, cost-aware, observable, and responsibly governed.
+
+
+# Evidence Packet
+
+| Evidence | File |
+|---|---|
+| LlamaIndex TokenBudgetHandler PR #20546 | [PDF](assets/github-run-llama-llama-index-pull-20546.pdf) |
+| LlamaIndex Google GenAI cleanup PR #20607 | [PDF](assets/github-run-llama-llama-index-pull-20607.pdf) |
+| SkyPilot burn-rate metric PR #8683 | [PDF](assets/github-skypilot-org-skypilot-pull-8683.pdf) |
+| LiteLLM pricing-source links PR #20181 | [PDF](assets/github-BerriAI-litellm-pull-20181.pdf) |
+| LlamaIndex release notes | [PDF](assets/github-run-llama-llama-index-releases-tag-v0-14-14.pdf) |
+| SkyPilot release notes | [PDF](assets/github-skypilot-org-skypilot-releases-v12.pdf) |
+| LiteLLM release/reference evidence | [PDF](assets/github-BerriAI-litellm-releases-tag-v1-83-3-stable.pdf) |
+| SkyPilot published practitioner testimonial | [PDF](assets/github-blog-skypilot-co-case-studies.pdf) |
