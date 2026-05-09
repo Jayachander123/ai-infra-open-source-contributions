@@ -211,3 +211,5 @@ I am honored to be considered for the Rising Star Contributor category. My goal 
 | SkyPilot release notes | [PDF](assets/github-skypilot-org-skypilot-releases-v12.pdf) |
 | LiteLLM release/reference evidence | [PDF](assets/github-BerriAI-litellm-releases-tag-v1-83-3-stable.pdf) |
 | SkyPilot published practitioner testimonial | [PDF](assets/github-blog-skypilot-co-case-studies.pdf) |
+
+> Note: GitHub’s in-browser PDF preview may not render some files. If a PDF does not preview inside GitHub, please use the download button or open the raw file; the PDFs open correctly after download.
