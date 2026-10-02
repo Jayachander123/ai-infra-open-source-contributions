@@ -315,11 +315,14 @@ with t1:
                 f'someone knows — and that is the variable this metric changes.</div>',
                 unsafe_allow_html=True)
 
-    hours = [0, 2, 4, 6, 8, 10, 12, 24, 36, 48, 60]
-    st.line_chart(
-        pd.DataFrame({"Hours before anyone notices": hours,
-                      "Cost of the stuck clusters": [stuck_rate * h for h in hours]}),
-        x="Hours before anyone notices", y="Cost of the stuck clusters", height=200)
+    st.bar_chart(
+        pd.DataFrame({
+            "How long before anyone knows": ["10 min (alert)", "12 h (next day)",
+                                             "60 h (weekend)"],
+            "Cost of the stuck clusters": [stuck_rate / 6, stuck_rate * 12, stuck_rate * 60],
+        }),
+        x="How long before anyone knows", y="Cost of the stuck clusters",
+        horizontal=True, height=200)
 
     with st.expander("Cost assumptions"):
         st.markdown(f"""
@@ -327,9 +330,10 @@ with t1:
 |---|---|
 | Cost per agent reasoning step | ${COST_PER_STEP:.3f} (~3k in / 500 out, GPT-4-class) |
 | Steps per minute, stuck agent | {STEPS_PER_MIN} |
-| Ceiling halts the run at | {BUDGET_STEPS} steps |
-| Window | {window} hours |
-| Agents stuck at any time | 1 per 140 clusters |
+| Burn rate per stuck cluster | ${HOURLY:,.0f}/hr |
+| Clusters stuck at any time | 1 per 140 |
+| Alert threshold | 15% above steady state |
+| Detection windows compared | 10 minutes, 12 hours, 60 hours |
 
 Substitute your own model mix, rates and failure frequency. The shape does not change.
 """)
