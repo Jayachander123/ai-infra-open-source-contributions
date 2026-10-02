@@ -40,6 +40,10 @@ st.markdown("""
        padding:16px 18px;color:#c9d1d9;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
        font-size:12.5px;line-height:1.7;overflow-x:auto;}
  .prom .c{color:#6e7681;} .prom .v-ok{color:#3fb950;} .prom .v-hot{color:#ff7b72;}
+ .term{background:#0d1117;border:1px solid rgba(128,128,128,.3);border-radius:8px;
+       padding:14px 16px;color:#c9d1d9;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+       font-size:12px;line-height:1.75;min-height:200px;overflow-x:auto;}
+ .term .w{color:#d29922;} .term .r{color:#8b949e;} .term .e{color:#ff7b72;font-weight:600;}
 </style>""", unsafe_allow_html=True)
 
 st.title("Cost Governance for Agentic AI")
@@ -180,11 +184,14 @@ with t1:
             unsafe_allow_html=True)
 
     def trace(slot, log, err=None):
-        html = "".join(f'<div class="step">{s}</div>' for s in log[-8:])
+        rows = []
+        for ln in log[-8:]:
+            cls = "w" if "WARN" in ln else ("r" if ln.startswith("->") else "")
+            rows.append(f'<div class="{cls}">{ln}</div>' if cls else f"<div>{ln}</div>")
         if err:
-            html += (f'<div class="step" style="color:#e05a4b;font-weight:600">'
-                     f'ValueError: {err}</div>')
-        slot.markdown('<p class="lbl">Agent trace</p>' + html, unsafe_allow_html=True)
+            rows.append(f'<div class="e">ValueError: {err}</div>')
+        slot.markdown('<p class="lbl">Agent trace</p><div class="term">'
+                      + "".join(rows) + '</div>', unsafe_allow_html=True)
 
     if go:
         from llama_index.core.llms import MockLLM
