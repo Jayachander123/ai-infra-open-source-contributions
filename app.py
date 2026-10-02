@@ -79,14 +79,25 @@ These four contributions address that at the framework layer, where agents actua
 """)
     st.dataframe(pd.DataFrame([
         {"Project": "LlamaIndex", "Contribution": "Token-budget enforcement in TokenCountingHandler",
-         "PR": "#20546", "Shipped in": "v0.14.14"},
+         "PR": "https://github.com/run-llama/llama_index/pull/20546", "Shipped in": "v0.14.14"},
         {"Project": "LlamaIndex", "Contribution": "Google GenAI cleanup and error handling",
-         "PR": "#20607", "Shipped in": "v0.14.14"},
+         "PR": "https://github.com/run-llama/llama_index/pull/20607", "Shipped in": "v0.14.14"},
         {"Project": "SkyPilot", "Contribution": "Real-time cluster burn-rate metric",
-         "PR": "#8683", "Shipped in": "v0.12.0"},
+         "PR": "https://github.com/skypilot-org/skypilot/pull/8683", "Shipped in": "v0.12.0"},
         {"Project": "LiteLLM", "Contribution": "Official model-pricing source metadata",
-         "PR": "#20181", "Shipped in": "v1.83.3-stable"},
-    ]), hide_index=True, use_container_width=True)
+         "PR": "https://github.com/BerriAI/litellm/pull/20181", "Shipped in": "v1.83.3-stable"},
+    ]), hide_index=True, use_container_width=True,
+        column_config={"PR": st.column_config.LinkColumn("PR", display_text=r"pull/(\d+)")})
+
+    r1, r2, r3 = st.columns(3)
+    r1.markdown('<p class="lbl">LlamaIndex</p><p class="mid">52k<span style="font-size:15px"> '
+                'stars</span></p><p class="quiet">4.5M downloads / month</p>', unsafe_allow_html=True)
+    r2.markdown('<p class="lbl">LiteLLM</p><p class="mid">59k<span style="font-size:15px"> '
+                'stars</span></p><p class="quiet">LLM gateway and proxy</p>', unsafe_allow_html=True)
+    r3.markdown('<p class="lbl">SkyPilot</p><p class="mid">10.6k<span style="font-size:15px"> '
+                'stars</span></p><p class="quiet">Multi-cloud AI compute</p>', unsafe_allow_html=True)
+    st.caption("Project metrics shown for context on where the contributions landed, "
+               "not as a claim about the contributions themselves.")
 
     st.markdown("### What each one does")
 
@@ -143,56 +154,82 @@ with t1:
                 "ledger, meets a record with a null unit cost, and retries. "
                 "**The same agent run twice — the only difference is the contributed argument.**")
 
+    st.info("**This runs for real.** A live LlamaIndex pipeline with a real `CallbackManager` "
+            "and a real `TokenCountingHandler`, driven by `MockLLM` so it needs no API key and "
+            "spends nothing. The token counts below come from the handler itself, and the stop "
+            "is the contributed code raising.")
+
     go = st.button("Run both", type="primary", key="krun")
 
     cL, cR = st.columns(2)
     cL.markdown("#### Without the contribution")
     cL.caption("TokenCountingHandler(tokenizer=tok)")
     cR.markdown("#### With the contribution")
-    cR.caption("TokenCountingHandler(tokenizer=tok, token_budget=50_000)")
+    cR.caption("TokenCountingHandler(tokenizer=tok, token_budget=1000)")
 
     lA, lB = cL.empty(), cR.empty()
     tA, tB = cL.empty(), cR.empty()
     nA, nB = cL.empty(), cR.empty()
 
-    def panel(slot, rate, steps, spent, cls):
+    def panel(slot, toks, calls, cls, stopped=False):
         slot.markdown(
-            f'<p class="lbl">Burn rate</p><p class="big {cls}">${rate:,.0f}'
-            f'<span style="font-size:22px">/hr</span></p>'
-            f'<p class="lbl" style="margin-top:12px">Steps / spent</p>'
-            f'<p class="mid {cls}">{steps} &nbsp;·&nbsp; ${spent:,.2f}</p>',
+            f'<p class="lbl">Tokens counted by the handler</p>'
+            f'<p class="big {cls}">{toks:,}</p>'
+            f'<p class="lbl" style="margin-top:12px">Agent steps</p>'
+            f'<p class="mid {cls}">{calls}{" · halted" if stopped else ""}</p>',
             unsafe_allow_html=True)
 
-    def trace(slot, log, stop=False):
+    def trace(slot, log, err=None):
         html = "".join(f'<div class="step">{s}</div>' for s in log[-8:])
-        if stop:
-            html += ('<div class="step" style="color:#e05a4b;font-weight:600">'
-                     'ValueError: Token budget exceeded! Limit: 50000, Current: 50412</div>')
+        if err:
+            html += (f'<div class="step" style="color:#e05a4b;font-weight:600">'
+                     f'ValueError: {err}</div>')
         slot.markdown('<p class="lbl">Agent trace</p>' + html, unsafe_allow_html=True)
 
     if go:
-        logA, logB = [], []
-        for i in range(1, 61):
-            logA.append(STEPS[i-1] if i <= 12 else STEPS[3 + (i % 9)])
-            panel(lA, HOURLY*min(1, i/16), i, i*COST_PER_STEP, "red")
+        from llama_index.core.llms import MockLLM
+        from llama_index.core.callbacks import CallbackManager
+        from llama_index.core.callbacks.token_counting import TokenCountingHandler
+
+        words = lambda t: t.split()
+        hA = TokenCountingHandler(tokenizer=words)
+        hB = TokenCountingHandler(tokenizer=words, token_budget=1000)
+        llmA = MockLLM(max_tokens=40, callback_manager=CallbackManager([hA]))
+        llmB = MockLLM(max_tokens=40, callback_manager=CallbackManager([hB]))
+
+        logA, logB, halted, err = [], [], False, None
+        for i in range(1, 41):
+            prompt = STEPS[(i - 1) % len(STEPS)] + " reconcile ledger entry ITEM-88213 " * 3
+            llmA.complete(prompt)
+            logA.append(STEPS[(i - 1) % len(STEPS)])
+            panel(lA, hA.total_llm_token_count, i, "red")
             trace(tA, logA)
-            if i <= BUDGET_STEPS:
-                logB.append(STEPS[i-1])
-                panel(lB, HOURLY*min(1, i/16), i, i*COST_PER_STEP, "grn")
-                trace(tB, logB, stop=(i == BUDGET_STEPS))
-                if i == BUDGET_STEPS:
-                    nB.success("**Stopped itself** and reported the limit it hit.")
-            time.sleep(0.07)
-        nA.error("**Nothing stopped it.** Halted by hand after 60 steps.")
+            if not halted:
+                try:
+                    llmB.complete(prompt)
+                    logB.append(STEPS[(i - 1) % len(STEPS)])
+                    panel(lB, hB.total_llm_token_count, i, "grn")
+                    trace(tB, logB)
+                except ValueError as e:
+                    halted, err = True, str(e)
+                    panel(lB, hB.total_llm_token_count, i - 1, "grn", stopped=True)
+                    trace(tB, logB, err=err)
+                    nB.success("**Stopped itself.** The framework refused the next call.")
+            time.sleep(0.09)
+        nA.error(f"**Nothing stopped it** — {hA.total_llm_token_count:,} tokens after 40 steps, "
+                 "halted only because the loop ended.")
+        ratio = hA.total_llm_token_count / max(hB.total_llm_token_count, 1)
         st.markdown(
-            f'<div class="card">Unbounded: <b style="color:#e05a4b">${HOURLY:,.0f}/hour</b>, '
-            f'continuing. &nbsp;Bounded: stopped at '
-            f'<b style="color:#2f9e63">${BUDGET_STEPS*COST_PER_STEP:,.2f}</b>. '
-            f'Same agent, same bad record — the difference is PR #20546.</div>',
-            unsafe_allow_html=True)
+            f'<div class="card">Same agent, same prompts, same tokenizer. Unbounded consumed '
+            f'<b style="color:#e05a4b">{hA.total_llm_token_count:,}</b> tokens; bounded stopped at '
+            f'<b style="color:#2f9e63">{hB.total_llm_token_count:,}</b> — about '
+            f'<b>{ratio:.0f}&times;</b> less. The difference is one argument, added in PR #20546.'
+            f'</div>', unsafe_allow_html=True)
+        st.caption("Token volumes here are small because MockLLM returns short responses. "
+                   "At production prompt sizes the same ratio applies to real spend — modelled below.")
     else:
-        panel(lA, 0, 0, 0, "red"); panel(lB, 0, 0, 0, "grn")
-        trace(tA, STEPS[:8]); trace(tB, STEPS[:8])
+        panel(lA, 0, 0, "red"); panel(lB, 0, 0, "grn")
+        trace(tA, STEPS[:6]); trace(tB, STEPS[:6])
 
     st.divider()
 
@@ -235,6 +272,18 @@ with t1:
             time.sleep(0.12)
     else:
         scrape.markdown(exposition(baseline, 0, False), unsafe_allow_html=True)
+
+    st.markdown("Because it is an ordinary gauge, existing alerting acts on it directly:")
+    st.code(
+        "# prometheus/rules.yml\n"
+        "- alert: ClusterBurnRateHigh\n"
+        "  expr: sky_apiserver_total_burn_rate_dollars > 750\n"
+        "  for: 10m\n"
+        "  labels:\n"
+        "    severity: warning\n"
+        "  annotations:\n"
+        "    summary: Fleet burn rate above threshold\n",
+        language="yaml")
 
     st.markdown("")
     f1, f2, f3, f4 = st.columns(4)
