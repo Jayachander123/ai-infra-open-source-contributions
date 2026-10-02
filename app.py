@@ -24,15 +24,22 @@ st.markdown("""
  .mid {font-size:30px;font-weight:700;line-height:1.1;margin:0;}
  .lbl {font-size:11px;letter-spacing:.15em;text-transform:uppercase;
        color:#8b949e;margin-bottom:3px;}
- .red {color:#c0392b;} .grn {color:#1f6f43;} .amb {color:#9a6700;}
+ .red {color:#e05a4b;} .grn {color:#2f9e63;} .amb {color:#c08a1e;}
  .step{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
-       padding:1px 0;color:#555;}
- .card{border:1px solid #e1e4e8;border-radius:8px;padding:16px 20px;background:#fafbfc;}
- .verify{border:2px solid #1f6f43;border-radius:8px;padding:18px 22px;
-         background:#f2f9f5;}
- .quiet{color:#6a737d;font-size:14px;}
- .fn{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;
-     font-weight:600;color:#1b1a18;}
+       padding:1px 0;color:inherit;opacity:.72;}
+ .card{border:1px solid rgba(128,128,128,.32);border-radius:8px;
+       padding:16px 20px;background:rgba(128,128,128,.07);color:inherit;}
+ .verify{border:2px solid #2f9e63;border-radius:8px;padding:18px 22px;
+         background:rgba(47,158,99,.10);color:inherit;}
+ .quiet{color:inherit;opacity:.68;font-size:14px;}
+ .fn{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;
+     font-weight:700;color:inherit;}
+ .attrib{font-size:13px;color:inherit;opacity:.78;border-left:3px solid #2f9e63;
+         padding:4px 0 4px 12px;margin:0 0 14px;}
+ .prom{background:#0d1117;border:1px solid rgba(128,128,128,.3);border-radius:8px;
+       padding:16px 18px;color:#c9d1d9;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+       font-size:12.5px;line-height:1.7;overflow-x:auto;}
+ .prom .c{color:#6e7681;} .prom .v-ok{color:#3fb950;} .prom .v-hot{color:#ff7b72;}
 </style>""", unsafe_allow_html=True)
 
 st.title("Cost Governance for Agentic AI")
@@ -125,16 +132,23 @@ as trustworthy as the price data behind them.
 
 # ============================================================ SEE IT WORK
 with t1:
-    st.markdown("A document-reconciliation agent is asked to explain a cost variance. "
-                "It queries a ledger, meets a record with a null unit cost, and retries. "
-                "**The same agent, run twice — the only difference is one argument.**")
+
+    # ---------- CONTRIBUTION 1 : THE CEILING ----------
+    st.markdown("## Contribution 1 · The ceiling")
+    st.markdown('<p class="attrib">Token-budget enforcement in <code>TokenCountingHandler</code> &nbsp;·&nbsp; '
+                '<b>LlamaIndex PR #20546</b>, authored by Jayachander Reddy Kandakatla, '
+                'merged by logan-markewich (LlamaIndex co-founder), shipped in v0.14.14</p>',
+                unsafe_allow_html=True)
+    st.markdown("A document-reconciliation agent is asked to explain a cost variance. It queries a "
+                "ledger, meets a record with a null unit cost, and retries. "
+                "**The same agent run twice — the only difference is the contributed argument.**")
 
     go = st.button("Run both", type="primary", key="krun")
 
     cL, cR = st.columns(2)
-    cL.markdown("#### No ceiling")
+    cL.markdown("#### Without the contribution")
     cL.caption("TokenCountingHandler(tokenizer=tok)")
-    cR.markdown("#### With a ceiling")
+    cR.markdown("#### With the contribution")
     cR.caption("TokenCountingHandler(tokenizer=tok, token_budget=50_000)")
 
     lA, lB = cL.empty(), cR.empty()
@@ -152,7 +166,7 @@ with t1:
     def trace(slot, log, stop=False):
         html = "".join(f'<div class="step">{s}</div>' for s in log[-8:])
         if stop:
-            html += ('<div class="step" style="color:#c0392b;font-weight:600">'
+            html += ('<div class="step" style="color:#e05a4b;font-weight:600">'
                      'ValueError: Token budget exceeded! Limit: 50000, Current: 50412</div>')
         slot.markdown('<p class="lbl">Agent trace</p>' + html, unsafe_allow_html=True)
 
@@ -171,52 +185,83 @@ with t1:
             time.sleep(0.07)
         nA.error("**Nothing stopped it.** Halted by hand after 60 steps.")
         st.markdown(
-            f'<div class="card">Unbounded: <b style="color:#c0392b">${HOURLY:,.0f}/hour</b>, '
+            f'<div class="card">Unbounded: <b style="color:#e05a4b">${HOURLY:,.0f}/hour</b>, '
             f'continuing. &nbsp;Bounded: stopped at '
-            f'<b style="color:#1f6f43">${BUDGET_STEPS*COST_PER_STEP:,.2f}</b>. '
-            f'Same agent, same bad record, one argument.</div>', unsafe_allow_html=True)
+            f'<b style="color:#2f9e63">${BUDGET_STEPS*COST_PER_STEP:,.2f}</b>. '
+            f'Same agent, same bad record — the difference is PR #20546.</div>',
+            unsafe_allow_html=True)
     else:
         panel(lA, 0, 0, 0, "red"); panel(lB, 0, 0, 0, "grn")
         trace(tA, STEPS[:8]); trace(tB, STEPS[:8])
 
     st.divider()
 
-    # ---------------- fleet ----------------
-    st.markdown("### Across a fleet")
-    st.markdown('<p class="quiet">Per-run ceilings bound one agent. '
-                '<code>sky_apiserver_total_burn_rate_dollars</code> shows the whole estate: '
-                'what is burning now, and what the ceilings are keeping off the invoice.</p>',
-                unsafe_allow_html=True)
+    # ---------- CONTRIBUTION 2 : THE GAUGE ----------
+    st.markdown("## Contribution 2 · The gauge")
+    st.markdown('<p class="attrib">Real-time cluster burn-rate metric &nbsp;·&nbsp; '
+                '<b>SkyPilot PR #8683</b>, authored by Jayachander Reddy Kandakatla, '
+                'reviewed and merged by aylei, shipped in v0.12.0</p>', unsafe_allow_html=True)
+    st.markdown("A ceiling bounds one agent. It cannot tell you what the estate is burning right "
+                "now. This contribution adds a Prometheus gauge to the SkyPilot API server that "
+                "sums the hourly cost of every cluster in `UP` state, refreshed every 30 seconds "
+                "and scraped like any other metric.")
 
-    n = st.slider("Deployments running agents", 50, 2000, 420, step=10)
+    n = st.slider("Clusters running agent workloads", 50, 2000, 420, step=10)
     stuck_n = max(1, n // 140)
-    window = 60                                     # hours, Friday night to Monday
-
+    window = 60
     unbounded_cost = stuck_n * HOURLY * window
     bounded_cost = stuck_n * BUDGET_STEPS * COST_PER_STEP
     baseline = n * 1.2
 
+    scrape = st.empty()
+    show = st.button("Scrape the metric", type="primary", key="kscrape")
+
+    def exposition(val, stuck, rising):
+        return (
+            '<div class="prom">'
+            '<span class="c"># HELP sky_apiserver_total_burn_rate_dollars '
+            'Total estimated hourly spend across all active clusters (USD/hr)</span><br>'
+            '<span class="c"># TYPE sky_apiserver_total_burn_rate_dollars gauge</span><br>'
+            f'sky_apiserver_total_burn_rate_dollars{{type="local_clusters"}} '
+            f'<b class="{"v-hot" if rising else "v-ok"}">{val:,.2f}</b>'
+            '<br><br>'
+            f'<span class="c"># {stuck} cluster(s) above alert threshold</span>'
+            '</div>')
+
+    if show:
+        for t in range(1, 22):
+            val = baseline + stuck_n * (1.5 + t * 2.4)
+            scrape.markdown(exposition(val, stuck_n, t > 4), unsafe_allow_html=True)
+            time.sleep(0.12)
+    else:
+        scrape.markdown(exposition(baseline, 0, False), unsafe_allow_html=True)
+
+    st.markdown("")
     f1, f2, f3, f4 = st.columns(4)
-    f1.markdown(f'<p class="lbl">Fleet burn rate, healthy</p>'
+    f1.markdown(f'<p class="lbl">Fleet rate, healthy</p>'
                 f'<p class="mid">${baseline:,.0f}<span style="font-size:16px">/hr</span></p>',
                 unsafe_allow_html=True)
-    f2.markdown(f'<p class="lbl">Agents stuck at any time</p>'
+    f2.markdown(f'<p class="lbl">Stuck at any time</p>'
                 f'<p class="mid amb">{stuck_n}</p>', unsafe_allow_html=True)
-    f3.markdown(f'<p class="lbl">Their cost, no ceiling (60h)</p>'
+    f3.markdown(f'<p class="lbl">Their 60h cost, no ceiling</p>'
                 f'<p class="mid red">${unbounded_cost:,.0f}</p>', unsafe_allow_html=True)
-    f4.markdown(f'<p class="lbl">Their cost, with ceiling</p>'
+    f4.markdown(f'<p class="lbl">Their 60h cost, with ceiling</p>'
                 f'<p class="mid grn">${bounded_cost:,.2f}</p>', unsafe_allow_html=True)
 
-    st.markdown(f'<div class="card">Across <b>{n:,}</b> deployments, a ceiling keeps roughly '
-                f'<b style="color:#1f6f43">${unbounded_cost - bounded_cost:,.0f}</b> off a single '
-                f'weekend\'s invoice — and the gauge is what tells you it happened at all, '
-                f'rather than finding out a month later.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="card">The two contributions work together. Across <b>{n:,}</b> '
+                f'clusters the ceiling keeps about '
+                f'<b style="color:#2f9e63">${unbounded_cost - bounded_cost:,.0f}</b> off a single '
+                f'weekend\'s invoice, and the gauge is what tells you it happened at all — rather '
+                f'than finding out a month later.</div>', unsafe_allow_html=True)
 
-    chart = pd.DataFrame({
-        "No ceiling": [stuck_n * HOURLY * h for h in range(0, window + 1, 5)],
-        "With ceiling": [bounded_cost] * len(range(0, window + 1, 5)),
-    }, index=[f"{h}h" for h in range(0, window + 1, 5)])
-    st.line_chart(chart, height=220)
+    hours = list(range(0, window + 1, 5))
+    st.line_chart(
+        pd.DataFrame({
+            "Hours unattended": hours,
+            "No ceiling": [stuck_n * HOURLY * h for h in hours],
+            "With ceiling": [bounded_cost] * len(hours),
+        }),
+        x="Hours unattended", y=["No ceiling", "With ceiling"], height=220)
 
     with st.expander("Cost assumptions"):
         st.markdown(f"""
@@ -226,7 +271,7 @@ with t1:
 | Steps per minute, stuck agent | {STEPS_PER_MIN} |
 | Ceiling halts the run at | {BUDGET_STEPS} steps |
 | Window | {window} hours |
-| Agents stuck at any time | 1 per 140 deployments |
+| Agents stuck at any time | 1 per 140 clusters |
 
 Substitute your own model mix, rates and failure frequency. The shape does not change.
 """)
