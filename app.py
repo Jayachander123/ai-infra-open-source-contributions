@@ -252,39 +252,41 @@ with t1:
 
     n = st.slider("Clusters running agent workloads", 50, 2000, 420, step=10)
     stuck_n = max(1, n // 140)
-    window = 60
-    unbounded_cost = stuck_n * HOURLY * window
-    bounded_cost = stuck_n * BUDGET_STEPS * COST_PER_STEP
     baseline = n * 1.2
+    spiking = baseline + stuck_n * 54.0
+    THRESH = round(baseline * 1.15, -1)
 
     scrape = st.empty()
     show = st.button("Scrape the metric", type="primary", key="kscrape")
 
-    def exposition(val, stuck, rising):
-        return (
-            '<div class="prom">'
-            '<span class="c"># HELP sky_apiserver_total_burn_rate_dollars '
-            'Total estimated hourly spend across all active clusters (USD/hr)</span><br>'
-            '<span class="c"># TYPE sky_apiserver_total_burn_rate_dollars gauge</span><br>'
-            f'sky_apiserver_total_burn_rate_dollars{{type="local_clusters"}} '
-            f'<b class="{"v-hot" if rising else "v-ok"}">{val:,.2f}</b>'
-            '<br><br>'
-            f'<span class="c"># {stuck} cluster(s) above alert threshold</span>'
-            '</div>')
+    def exposition(val, firing):
+        note = (f'<span class="c"># {stuck_n} cluster(s) stuck — alert ClusterBurnRateHigh '
+                f'FIRING (&gt; {THRESH:,.0f})</span>' if firing else
+                f'<span class="c"># steady state, below the {THRESH:,.0f} alert threshold</span>')
+        return ('<div class="prom">'
+                '<span class="c"># HELP sky_apiserver_total_burn_rate_dollars '
+                'Total estimated hourly spend across all active clusters (USD/hr)</span><br>'
+                '<span class="c"># TYPE sky_apiserver_total_burn_rate_dollars gauge</span><br>'
+                f'sky_apiserver_total_burn_rate_dollars{{type="local_clusters"}} '
+                f'<b class="{"v-hot" if firing else "v-ok"}">{val:,.2f}</b>'
+                f'<br><br>{note}</div>')
 
     if show:
-        for t in range(1, 22):
-            val = baseline + stuck_n * (1.5 + t * 2.4)
-            scrape.markdown(exposition(val, stuck_n, t > 4), unsafe_allow_html=True)
-            time.sleep(0.12)
+        for t in range(1, 20):
+            val = baseline + stuck_n * (t * 3.0)
+            scrape.markdown(exposition(val, val > THRESH), unsafe_allow_html=True)
+            time.sleep(0.13)
     else:
-        scrape.markdown(exposition(baseline, 0, False), unsafe_allow_html=True)
+        scrape.markdown(exposition(baseline, False), unsafe_allow_html=True)
+
+    st.caption(f"Steady state is about ${baseline:,.0f}/hr across {n:,} clusters. "
+               f"As {stuck_n} get stuck, the gauge climbs past the threshold and the alert fires.")
 
     st.markdown("Because it is an ordinary gauge, existing alerting acts on it directly:")
     st.code(
         "# prometheus/rules.yml\n"
         "- alert: ClusterBurnRateHigh\n"
-        "  expr: sky_apiserver_total_burn_rate_dollars > 750\n"
+        f"  expr: sky_apiserver_total_burn_rate_dollars > {THRESH:,.0f}\n".replace(",", "") +
         "  for: 10m\n"
         "  labels:\n"
         "    severity: warning\n"
@@ -292,32 +294,32 @@ with t1:
         "    summary: Fleet burn rate above threshold\n",
         language="yaml")
 
-    st.markdown("")
-    f1, f2, f3, f4 = st.columns(4)
-    f1.markdown(f'<p class="lbl">Fleet rate, healthy</p>'
-                f'<p class="mid">${baseline:,.0f}<span style="font-size:16px">/hr</span></p>',
+    st.markdown("#### What the gauge is worth: time to detection")
+    st.markdown("The ceiling stops each individual run. The gauge answers a different question — "
+                "*how long before anyone knows?* That interval is what the spend is multiplied by.")
+
+    stuck_rate = stuck_n * HOURLY
+    d1, d2, d3 = st.columns(3)
+    d1.markdown(f'<p class="lbl">Noticed on the monthly invoice</p>'
+                f'<p class="mid red">${stuck_rate*60:,.0f}</p>'
+                f'<p class="quiet">a weekend unattended, 60h</p>', unsafe_allow_html=True)
+    d2.markdown(f'<p class="lbl">Noticed next working day</p>'
+                f'<p class="mid amb">${stuck_rate*12:,.0f}</p>'
+                f'<p class="quiet">12h</p>', unsafe_allow_html=True)
+    d3.markdown(f'<p class="lbl">Alert fires on the gauge</p>'
+                f'<p class="mid grn">${stuck_rate/6:,.0f}</p>'
+                f'<p class="quiet">10 minutes</p>', unsafe_allow_html=True)
+
+    st.markdown(f'<div class="card">Same {stuck_n} stuck cluster(s), same burn rate of '
+                f'<b>${stuck_rate:,.0f}/hr</b>. The only variable is how long it runs before '
+                f'someone knows — and that is the variable this metric changes.</div>',
                 unsafe_allow_html=True)
-    f2.markdown(f'<p class="lbl">Stuck at any time</p>'
-                f'<p class="mid amb">{stuck_n}</p>', unsafe_allow_html=True)
-    f3.markdown(f'<p class="lbl">Their 60h cost, no ceiling</p>'
-                f'<p class="mid red">${unbounded_cost:,.0f}</p>', unsafe_allow_html=True)
-    f4.markdown(f'<p class="lbl">Their 60h cost, with ceiling</p>'
-                f'<p class="mid grn">${bounded_cost:,.2f}</p>', unsafe_allow_html=True)
 
-    st.markdown(f'<div class="card">The two contributions work together. Across <b>{n:,}</b> '
-                f'clusters the ceiling keeps about '
-                f'<b style="color:#2f9e63">${unbounded_cost - bounded_cost:,.0f}</b> off a single '
-                f'weekend\'s invoice, and the gauge is what tells you it happened at all — rather '
-                f'than finding out a month later.</div>', unsafe_allow_html=True)
-
-    hours = list(range(0, window + 1, 5))
+    hours = [0, 2, 4, 6, 8, 10, 12, 24, 36, 48, 60]
     st.line_chart(
-        pd.DataFrame({
-            "Hours unattended": hours,
-            "No ceiling": [stuck_n * HOURLY * h for h in hours],
-            "With ceiling": [bounded_cost] * len(hours),
-        }),
-        x="Hours unattended", y=["No ceiling", "With ceiling"], height=220)
+        pd.DataFrame({"Hours before anyone notices": hours,
+                      "Cost of the stuck clusters": [stuck_rate * h for h in hours]}),
+        x="Hours before anyone notices", y="Cost of the stuck clusters", height=200)
 
     with st.expander("Cost assumptions"):
         st.markdown(f"""
